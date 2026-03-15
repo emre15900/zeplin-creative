@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
+import LayoutShell from "@/components/LayoutShell";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,9 +33,7 @@ export default function RootLayout({
     <html lang="tr" className={inter.variable} suppressHydrationWarning>
       <body className="antialiased font-inter" suppressHydrationWarning>
         <ScrollToTop />
-        <Header />
-        {children}
-        <Footer />
+        <LayoutShell>{children}</LayoutShell>
       </body>
     </html>
   );

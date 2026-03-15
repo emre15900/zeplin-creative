@@ -11,6 +11,7 @@ const navItems = [
   { name: 'Makale Çağrıları', href: '#makale-cagrilari' },
   { name: 'Sayılar', href: '#sayilar' },
   { name: 'İletişim', href: '#iletisim' },
+  { name: 'İdeal Erkek', href: '/ideal-erkek' },
 ];
 
 // Home icon component with green color
