@@ -16,6 +16,17 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### İdeal Erkek Sayfası - AI Entegrasyonu
+
+`/ideal-erkek` sayfasındaki "İdeal erkeğim sence nasıl olmalı?" butonu Google Gemini AI kullanır. Çalışması için:
+
+1. [Google AI Studio](https://aistudio.google.com/apikey) adresinden ücretsiz API key al
+2. Proje kökünde `.env.local` oluştur
+3. İçine `GEMINI_API_KEY=your_api_key_here` ekle
+4. Sunucuyu yeniden başlat
+
+API key yoksa statik öneri gösterilir.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

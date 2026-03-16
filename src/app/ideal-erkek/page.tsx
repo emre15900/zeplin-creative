@@ -3,6 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import html2canvas from 'html2canvas';
 
 type Feature = {
   id: number;
@@ -11,6 +12,22 @@ type Feature = {
 };
 
 const pickRandom = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+const STATIC_PROFILE_TEXT = `Bir erkekte hangi özellik ne kadar olmalı?
+
+İdeal bir erkek profili dengeli olmalı. Temel değerler yüksek, bazı şeyler düşük kalmalı.
+
+• Saygılı, Güvenilir, Sadakat (9): İlişkinin temeli.
+• Zeka, Duygusal zeka (8): Hem akıllı hem duygusal olmalı.
+• Cinsel uyum (7): Önemli ama tek kriter değil.
+• Güç, Boy, Kas (6): Biraz olsun yeter.
+• Para, Araba (5-6): Para her şey değil.
+• Yemek, Ev işleri (7): Kendi ayakları üzerinde durabilmeli.
+• Gavatlık (1): Mümkünse sıfıra yakın olsun.
+• PC oyunları (6): Oyun oynasın ama seni de dinlesin.
+• Sosyal medya takibi (0-1): Bu özellik düşük kalsın.
+
+Ekleyebileceğin özellikler: Liderlik, Kıskançlık, Netflix paylaşımı, Aile değerleri`;
 
 const initialFeatures: Feature[] = [
   { id: 1, name: 'Saygılı', level: 8 },
@@ -274,9 +291,132 @@ export default function IdealErkekPage() {
     { id: -25, name: 'Yakışıklılık', level: 1 },
   ];
 
-  const showIdealProfile = () => {
+  const showIdealProfile = async () => {
+    Swal.fire({
+      title: 'AI düşünüyor...',
+      html: 'Profilin analiz ediliyor, bir saniye.',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    try {
+      const res = await fetch('/api/ideal-erkek', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          features: features.map((f) => ({ name: f.name, level: f.level })),
+          type: 'profile',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'AI yanıtı alınamadı');
+      }
+
+      const aiText = (data.text || '').replace(/\n/g, '<br>');
+      const rawText = data.text || '';
+
+      Swal.fire({
+        title: 'İdeal Erkek Profili',
+        html: `
+          <div style="text-align: left; line-height: 1.7; color: #334155; max-height: 400px; overflow-y: auto;">
+            <p style="margin-bottom: 12px; white-space: pre-wrap;">${aiText}</p>
+            <hr style="margin: 16px 0; border-color: #e2e8f0;">
+            <p style="font-size: 0.9em;">Önerilen profili uygulamak ister misin?</p>
+            <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+              <button type="button" id="copy-text-btn" class="swal2-styled" style="background: #64748b; font-size: 13px; padding: 8px 14px;">Yazı olarak kopyala</button>
+              <button type="button" id="copy-image-btn" class="swal2-styled" style="background: #64748b; font-size: 13px; padding: 8px 14px;">Görsel olarak kopyala</button>
+            </div>
+          </div>
+        `,
+        icon: 'info',
+        showCloseButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'Bunu uygula',
+        cancelButtonText: 'Kendim ayarlayacağım',
+        confirmButtonColor: '#06b6d4',
+        didOpen: () => {
+          document.getElementById('copy-text-btn')?.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(rawText);
+              Swal.fire({ icon: 'success', title: 'Kopyalandı!', timer: 1500, showConfirmButton: false });
+            } catch {
+              Swal.fire({ icon: 'error', title: 'Kopyalanamadı' });
+            }
+          });
+          document.getElementById('copy-image-btn')?.addEventListener('click', async () => {
+            try {
+              const popup = document.querySelector('.swal2-popup') as HTMLElement;
+              if (popup) {
+                const canvas = await html2canvas(popup, { backgroundColor: '#ffffff', scale: 2 });
+                canvas.toBlob(async (blob) => {
+                  if (blob) {
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    Swal.fire({ icon: 'success', title: 'Görsel kopyalandı!', timer: 1500, showConfirmButton: false });
+                  }
+                });
+              }
+            } catch {
+              Swal.fire({ icon: 'error', title: 'Görsel kopyalanamadı' });
+            }
+          });
+        },
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const withIds = suggestedProfile.map((f, i) => ({
+            ...f,
+            id: Date.now() + i,
+          }));
+          setFeatures(withIds);
+          Swal.fire({
+            title: 'Profil uygulandı!',
+            text: 'Bass ayarlarını istersen daha da ince ayar yapabilirsin.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+          });
+        }
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Bağlantı hatası';
+      const isNoKey = errorMsg.includes('GEMINI_API_KEY');
+
+      Swal.fire({
+        title: isNoKey ? 'API Key Kurulumu' : 'AI Kullanılamadı',
+        showCloseButton: true,
+        html: isNoKey
+          ? `
+            <p style="color: #334155; margin-bottom: 12px;">İdeal erkek önerisi için Gemini API key gerekiyor.</p>
+            <ol style="text-align: left; color: #334155; margin: 12px 0; padding-left: 20px;">
+              <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> adresine git</li>
+              <li>Ücretsiz API key oluştur</li>
+              <li>Proje kökünde <code>.env.local</code> oluştur</li>
+              <li>İçine <code>GEMINI_API_KEY=your_key</code> yaz</li>
+            </ol>
+            <p style="margin-top: 12px; font-size: 0.9em;">Şimdilik statik öneri kullanayım mı?</p>
+          `
+          : `<p style="color: #334155;">${errorMsg}</p><p style="margin-top: 12px; font-size: 0.9em;">Statik öneri kullanayım mı?</p>`,
+        icon: isNoKey ? 'info' : 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Statik öneri göster',
+        cancelButtonText: 'Kapat',
+        confirmButtonColor: '#06b6d4',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showStaticIdealProfile();
+        }
+      });
+    }
+  };
+
+  const showStaticIdealProfile = () => {
     Swal.fire({
       title: 'İdeal Erkek Profili',
+      showCloseButton: true,
       html: `
         <div style="text-align: left; line-height: 1.7; color: #334155;">
           <p style="margin-bottom: 12px;"><strong>Bir erkekte hangi özellik ne kadar olmalı?</strong></p>
@@ -286,14 +426,18 @@ export default function IdealErkekPage() {
             <li><strong>Zeka, Duygusal zeka (8):</strong> Hem akıllı hem duygusal olmalı.</li>
             <li><strong>Cinsel uyum (7):</strong> Önemli ama tek kriter değil.</li>
             <li><strong>Güç, Boy, Kas (6):</strong> Biraz olsun yeter.</li>
-            <li><strong>Para, Araba (5-6):</strong> Para her şey değil. (Ama hiç de olmasın demiyoruz.)</li>
+            <li><strong>Para, Araba (5-6):</strong> Para her şey değil.</li>
             <li><strong>Yemek, Ev işleri (7):</strong> Kendi ayakları üzerinde durabilmeli.</li>
             <li><strong>Gavatlık (1):</strong> Mümkünse sıfıra yakın olsun.</li>
-            <li><strong>PlayStation bırakma (6):</strong> Oyun oynasın ama seni de dinlesin.</li>
-            <li><strong>Sosyal medya takibi, Eski sevgili (0-1):</strong> Bu özellikler düşük kalsın.</li>
+            <li><strong>PC oyunları (6):</strong> Oyun oynasın ama seni de dinlesin.</li>
+            <li><strong>Sosyal medya takibi (0-1):</strong> Bu özellik düşük kalsın.</li>
           </ul>
           <p style="margin-top: 12px; font-size: 0.9em;">Ekleyebileceğin özellikler: <em>Liderlik, Kıskançlık, Netflix paylaşımı, Aile değerleri</em></p>
           <p style="margin-top: 8px; font-size: 0.9em;">Bu profili uygulamak ister misin?</p>
+          <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+            <button type="button" id="copy-text-static-btn" class="swal2-styled" style="background: #64748b; font-size: 13px; padding: 8px 14px;">Yazı olarak kopyala</button>
+            <button type="button" id="copy-image-static-btn" class="swal2-styled" style="background: #64748b; font-size: 13px; padding: 8px 14px;">Görsel olarak kopyala</button>
+          </div>
         </div>
       `,
       icon: 'info',
@@ -301,6 +445,32 @@ export default function IdealErkekPage() {
       confirmButtonText: 'Bunu uygula',
       cancelButtonText: 'Kendim ayarlayacağım',
       confirmButtonColor: '#06b6d4',
+      didOpen: () => {
+        document.getElementById('copy-text-static-btn')?.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(STATIC_PROFILE_TEXT);
+            Swal.fire({ icon: 'success', title: 'Kopyalandı!', timer: 1500, showConfirmButton: false });
+          } catch {
+            Swal.fire({ icon: 'error', title: 'Kopyalanamadı' });
+          }
+        });
+        document.getElementById('copy-image-static-btn')?.addEventListener('click', async () => {
+          try {
+            const popup = document.querySelector('.swal2-popup') as HTMLElement;
+            if (popup) {
+              const canvas = await html2canvas(popup, { backgroundColor: '#ffffff', scale: 2 });
+              canvas.toBlob(async (blob) => {
+                if (blob) {
+                  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                  Swal.fire({ icon: 'success', title: 'Görsel kopyalandı!', timer: 1500, showConfirmButton: false });
+                }
+              });
+            }
+          } catch {
+            Swal.fire({ icon: 'error', title: 'Görsel kopyalanamadı' });
+          }
+        });
+      },
     }).then((result) => {
       if (result.isConfirmed) {
         const withIds = suggestedProfile.map((f, i) => ({
