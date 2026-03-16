@@ -12,6 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ozgwguceb.vercel.app"),
   title: "İdeal Erkek | Partner Analizi",
   description: "İdeal erkek profilini oluştur, özelliklerin bass seviyesini ayarla. Partnerini analiz et, AI ile ilişki tavsiyeleri al.",
   keywords: ["ideal erkek", "partner analizi", "ilişki", "bass seviyesi", "AI analiz", "ilişki tavsiyesi", "erkek profili"],
@@ -21,6 +22,12 @@ export const metadata: Metadata = {
     description: "İdeal erkek profilini oluştur, partnerini AI ile analiz et.",
     type: "website",
     locale: "tr_TR",
+    siteName: "İdeal Erkek",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "İdeal Erkek | Partner Analizi",
+    description: "İdeal erkek profilini oluştur, partnerini AI ile analiz et.",
   },
 };
 
