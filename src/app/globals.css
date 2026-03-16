@@ -101,3 +101,25 @@ html, body {
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out;
 }
+
+/* SweetAlert2 fullscreen modals (İdeal Erkek, Partner Analiz) */
+.swal-fullscreen {
+  width: 96vw !important;
+  max-width: 96vw !important;
+  min-height: 90vh !important;
+  padding: 0.5rem 0.75rem !important;
+}
+.swal-fullscreen .swal2-title {
+  padding: 0.25rem 0 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+}
+.swal-fullscreen .swal2-icon {
+  margin: 0.25rem 0 !important;
+  transform: scale(0.75);
+}
+.swal-fullscreen .swal2-html-container {
+  max-height: calc(90vh - 70px) !important;
+  overflow-y: auto !important;
+  padding: 0.15rem 0 !important;
+  margin: 0 !important;
+}

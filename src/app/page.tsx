@@ -7,11 +7,11 @@ import CurrentArticles from '@/components/CurrentArticles';
 export default function Home() {
   return (
     <main className="min-h-screen bg-white">
-      <Hero />
+     {/* <Hero />
       <JournalScope />
       <Journals />
       <CallForPapers />
-      <CurrentArticles />
+      <CurrentArticles /> */}
     </main>
   );
 }

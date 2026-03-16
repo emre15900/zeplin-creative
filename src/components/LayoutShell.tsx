@@ -12,7 +12,10 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   const pathname = usePathname();
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
   const hideHeaderFooter =
-    normalizedPath === '/ideal-erkek' || normalizedPath.startsWith('/ideal-erkek/');
+    normalizedPath === '/ideal-erkek' ||
+    normalizedPath.startsWith('/ideal-erkek/') ||
+    normalizedPath === '/partner-analiz' ||
+    normalizedPath.startsWith('/partner-analiz/');
 
   if (hideHeaderFooter) {
     return <>{children}</>;

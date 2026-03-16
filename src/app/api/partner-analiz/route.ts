@@ -14,9 +14,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { features, type = 'profile', isOzge } = body as {
+    const { features, type, isOzge } = body as {
       features: Feature[];
-      type?: 'profile' | 'comment' | 'suggest';
+      type: 'analyze' | 'support';
       isOzge?: boolean;
     };
 
@@ -31,29 +31,24 @@ export async function POST(request: NextRequest) {
 
     const hitap = isOzge ? ' Kullanıcıya "Özgecim" diye hitap et.' : '';
 
-    if (type === 'profile') {
-      prompt = `Sen eğlenceli ve samimi bir ilişki danışmanısın. Türkçe yanıt ver.${hitap}
+    if (type === 'analyze') {
+      prompt = `Sen esprili, samimi ama biraz sivri dilli bir ilişki danışmanısın. Türkçe yanıt ver.${hitap}
 
-Kullanıcının ideal erkek profilindeki özellikler ve bass seviyeleri (0-10):
+Kullanıcı (muhtemelen bir kadın) mevcut partnerinin özelliklerini bass seviyeleriyle girmiş:
 ${featuresText}
 
-Bu profile göre doğal akıcı paragraflar halinde yaz. Başlık, madde işareti veya "**...:**" gibi formatlar KULLANMA. Sadece düz metin, sanki bir arkadaşına konuşuyormuşsun gibi.
+Partner analizi yap. Ama aynı zamanda bunu yazan kişiye de hafifçe sataş: Mükemmel erkek yaratmaya çalışıyor ama kendisi mükemmel mi? Kendi eksikliklerini tamamen kapatıyor mu? İlişkide tek taraflı beklenti mi var? Bunu esprili, incitmeden ama dürüst bir dille söyle.
 
-İçerik: Kısa esprili değerlendirme, hangi özellikleri yükseltip düşürmesi gerektiği (sayılarla), ekleyebileceği 2-3 özellik, genel tavsiye. Hepsi akıcı paragraflar halinde, başlıksız.`;
-    } else if (type === 'comment') {
-      prompt = `Sen eğlenceli bir ilişki danışmanısın. Türkçe yanıt ver.${hitap}
-
-Kullanıcının ideal erkek profilindeki özellikler:
-${featuresText}
-
-Bu bass ayarlarına göre 1-2 cümlelik esprili, samimi bir yorum yap. Ne çok ciddi ne çok saçma olsun.`;
+Doğal akıcı paragraflar halinde yaz. Başlık veya madde işareti KULLANMA. Partnerin güçlü/zayıf yanları, genel değerlendirme ve "sen de kendine bak" mesajı. Hafif, samimi, bazen iğneleyici ama eğlenceli.`;
     } else {
-      prompt = `Sen eğlenceli bir ilişki danışmanısın. Türkçe yanıt ver.${hitap}
+      prompt = `Sen esprili ve samimi bir ilişki danışmanısın. Türkçe yanıt ver.${hitap}
 
-Kullanıcının mevcut özellikleri:
+Kullanıcı partnerinin eksikliklerini gidermesi için destek istiyor. Partnerin özellikleri:
 ${featuresText}
 
-Ekleyebileceği 3-4 yaratıcı ve esprili özellik öner. Her biri için kısa açıklama yap.`;
+Partnerine nasıl destek olabileceğini, hangi konularda birlikte gelişebileceklerini yaz. Ama yine de hafifçe sataş: "Partnerini değiştirmeye çalışırken kendin de biraz değişmeye hazır mısın?" tarzı. İkisi de gelişsin mesajı ver. Esprili, samimi, bazen iğneleyici.
+
+Doğal paragraflar, başlık yok.`;
     }
 
     const result = await model.generateContent(prompt);

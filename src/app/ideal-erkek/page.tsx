@@ -3,7 +3,9 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
-import html2canvas from 'html2canvas';
+import Link from 'next/link';
+import { showToast } from '@/lib/toast';
+import { isOzgeDate, OZGE_STORAGE_KEY } from '@/lib/ozge-date';
 
 type Feature = {
   id: number;
@@ -62,12 +64,70 @@ export default function IdealErkekPage() {
   const [newFeatureName, setNewFeatureName] = useState('');
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [visibleCount, setVisibleCount] = useState(8);
+  const [isOzge, setIsOzge] = useState<boolean | null>(null);
 
   const visibleFeatures = features.slice(0, visibleCount);
   const hasMoreFeatures = features.length > visibleCount;
   const canShowLess = visibleCount > 8;
   const rapidTenRef = useRef({ count: 0, lastTime: 0 });
   const lastAlertRef = useRef<Record<string, number>>({});
+  const aiProfileCacheRef = useRef<{ featuresKey: string; rawText: string } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem(OZGE_STORAGE_KEY) === 'true') {
+      setIsOzge(true);
+      return;
+    }
+    const ayAdlari = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    const gunOpt = Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+    const ayOpt = ayAdlari.map((a, i) => `<option value="${i + 1}">${a}</option>`).join('');
+    const yilOpt = Array.from({ length: 11 }, (_, i) => 2020 + i).map((y) => `<option value="${y}">${y}</option>`).join('');
+
+    Swal.fire({
+      title: 'İlişkinin başlama tarihi',
+      html: `
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0;">
+          <select id="swal-date-gun" style="padding:10px 14px;font-size:15px;border:1px solid #d1d5db;border-radius:8px;min-width:70px;">
+            <option value="">Gün</option>${gunOpt}
+          </select>
+          <select id="swal-date-ay" style="padding:10px 14px;font-size:15px;border:1px solid #d1d5db;border-radius:8px;min-width:100px;">
+            <option value="">Ay</option>${ayOpt}
+          </select>
+          <select id="swal-date-yil" style="padding:10px 14px;font-size:15px;border:1px solid #d1d5db;border-radius:8px;min-width:85px;">
+            <option value="">Yıl</option>${yilOpt}
+          </select>
+        </div>
+      `,
+      showCancelButton: false,
+      confirmButtonText: 'Devam',
+      allowOutsideClick: false,
+      preConfirm: () => {
+        const gun = (document.getElementById('swal-date-gun') as HTMLSelectElement)?.value;
+        const ay = (document.getElementById('swal-date-ay') as HTMLSelectElement)?.value;
+        const yil = (document.getElementById('swal-date-yil') as HTMLSelectElement)?.value;
+        if (!gun || !ay || !yil) return '';
+        const d = gun.padStart(2, '0');
+        const m = ay.padStart(2, '0');
+        return `${yil}-${m}-${d}`;
+      },
+    }).then((result) => {
+      const value = (result.value ?? '').trim();
+      if (isOzgeDate(value)) {
+        localStorage.setItem(OZGE_STORAGE_KEY, 'true');
+        setIsOzge(true);
+      } else {
+        Swal.fire({
+          title: 'Sen kimsin kardeşim?',
+          text: 'Sen git özge gelsin.',
+          icon: 'error',
+          confirmButtonText: 'Tamam',
+          allowOutsideClick: false,
+        });
+        setIsOzge(false);
+      }
+    });
+  }, []);
 
   const averageBass = useMemo(() => {
     if (!visibleFeatures.length) return 0;
@@ -292,6 +352,59 @@ export default function IdealErkekPage() {
   ];
 
   const showIdealProfile = async () => {
+    const featuresKey = JSON.stringify(features.map((f) => ({ name: f.name, level: f.level })));
+    const cached = aiProfileCacheRef.current;
+    if (cached?.featuresKey === featuresKey) {
+      const aiText = (cached.rawText || '').replace(/\n/g, '<br>');
+      const rawText = cached.rawText;
+      Swal.fire({
+        title: 'İdeal Erkek Profili',
+        html: `
+          <div style="text-align: left; line-height: 1.5; color: #334155; margin: 0; padding: 0;">
+            <p style="margin: 0 0 6px; white-space: pre-wrap;">${aiText}</p>
+            <hr style="margin: 6px 0; border-color: #e2e8f0;">
+            <p style="font-size: 0.9em; margin: 0 0 4px;">Önerilen profili uygulamak ister misin?</p>
+            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+              <button type="button" id="copy-text-btn" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:linear-gradient(135deg,#06b6d4,#0891b2);color:white;box-shadow:0 2px 10px rgba(6,182,212,0.3);">📋 Yazı olarak kopyala</button>
+            </div>
+          </div>
+        `,
+        icon: 'info',
+        showCloseButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'Bunu uygula',
+        cancelButtonText: 'Kendim ayarlayacağım',
+        confirmButtonColor: '#06b6d4',
+        customClass: { popup: 'swal-fullscreen' },
+        didOpen: () => {
+          document.getElementById('copy-text-btn')?.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(rawText);
+              showToast('Kopyalandı!');
+            } catch {
+              showToast('Kopyalanamadı');
+            }
+          });
+        },
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const withIds = suggestedProfile.map((f, i) => ({
+            ...f,
+            id: Date.now() + i,
+          }));
+          setFeatures(withIds);
+          Swal.fire({
+            title: 'Profil uygulandı!',
+            text: 'Bass ayarlarını istersen daha da ince ayar yapabilirsin.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+          });
+        }
+      });
+      return;
+    }
+
     Swal.fire({
       title: 'AI düşünüyor...',
       html: 'Profilin analiz ediliyor, bir saniye.',
@@ -308,6 +421,7 @@ export default function IdealErkekPage() {
         body: JSON.stringify({
           features: features.map((f) => ({ name: f.name, level: f.level })),
           type: 'profile',
+          isOzge: isOzge === true,
         }),
       });
 
@@ -317,19 +431,19 @@ export default function IdealErkekPage() {
         throw new Error(data.error || 'AI yanıtı alınamadı');
       }
 
-      const aiText = (data.text || '').replace(/\n/g, '<br>');
       const rawText = data.text || '';
+      aiProfileCacheRef.current = { featuresKey, rawText };
+      const aiText = (rawText || '').replace(/\n/g, '<br>');
 
       Swal.fire({
         title: 'İdeal Erkek Profili',
         html: `
-          <div style="text-align: left; line-height: 1.7; color: #334155; max-height: 400px; overflow-y: auto;">
-            <p style="margin-bottom: 12px; white-space: pre-wrap;">${aiText}</p>
-            <hr style="margin: 16px 0; border-color: #e2e8f0;">
-            <p style="font-size: 0.9em;">Önerilen profili uygulamak ister misin?</p>
-            <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
-              <button type="button" id="copy-text-btn" class="swal2-styled" style="background: #64748b; font-size: 13px; padding: 8px 14px;">Yazı olarak kopyala</button>
-              <button type="button" id="copy-image-btn" class="swal2-styled" style="background: #64748b; font-size: 13px; padding: 8px 14px;">Görsel olarak kopyala</button>
+          <div style="text-align: left; line-height: 1.5; color: #334155; margin: 0; padding: 0;">
+            <p style="margin: 0 0 6px; white-space: pre-wrap;">${aiText}</p>
+            <hr style="margin: 6px 0; border-color: #e2e8f0;">
+            <p style="font-size: 0.9em; margin: 0 0 4px;">Önerilen profili uygulamak ister misin?</p>
+            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+              <button type="button" id="copy-text-btn" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:linear-gradient(135deg,#06b6d4,#0891b2);color:white;box-shadow:0 2px 10px rgba(6,182,212,0.3);">📋 Yazı olarak kopyala</button>
             </div>
           </div>
         `,
@@ -339,29 +453,14 @@ export default function IdealErkekPage() {
         confirmButtonText: 'Bunu uygula',
         cancelButtonText: 'Kendim ayarlayacağım',
         confirmButtonColor: '#06b6d4',
+        customClass: { popup: 'swal-fullscreen' },
         didOpen: () => {
           document.getElementById('copy-text-btn')?.addEventListener('click', async () => {
             try {
               await navigator.clipboard.writeText(rawText);
-              Swal.fire({ icon: 'success', title: 'Kopyalandı!', timer: 1500, showConfirmButton: false });
+              showToast('Kopyalandı!');
             } catch {
-              Swal.fire({ icon: 'error', title: 'Kopyalanamadı' });
-            }
-          });
-          document.getElementById('copy-image-btn')?.addEventListener('click', async () => {
-            try {
-              const popup = document.querySelector('.swal2-popup') as HTMLElement;
-              if (popup) {
-                const canvas = await html2canvas(popup, { backgroundColor: '#ffffff', scale: 2 });
-                canvas.toBlob(async (blob) => {
-                  if (blob) {
-                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                    Swal.fire({ icon: 'success', title: 'Görsel kopyalandı!', timer: 1500, showConfirmButton: false });
-                  }
-                });
-              }
-            } catch {
-              Swal.fire({ icon: 'error', title: 'Görsel kopyalanamadı' });
+              showToast('Kopyalanamadı');
             }
           });
         },
@@ -418,10 +517,10 @@ export default function IdealErkekPage() {
       title: 'İdeal Erkek Profili',
       showCloseButton: true,
       html: `
-        <div style="text-align: left; line-height: 1.7; color: #334155;">
-          <p style="margin-bottom: 12px;"><strong>Bir erkekte hangi özellik ne kadar olmalı?</strong></p>
-          <p style="margin-bottom: 12px;">İdeal bir erkek profili dengeli olmalı. Temel değerler yüksek, bazı şeyler düşük kalmalı.</p>
-          <ul style="margin: 12px 0; padding-left: 20px; font-size: 0.95em;">
+        <div style="text-align: left; line-height: 1.5; color: #334155; margin: 0; padding: 0;">
+          <p style="margin: 0 0 6px;"><strong>Bir erkekte hangi özellik ne kadar olmalı?</strong></p>
+          <p style="margin: 0 0 6px;">İdeal bir erkek profili dengeli olmalı. Temel değerler yüksek, bazı şeyler düşük kalmalı.</p>
+          <ul style="margin: 6px 0; padding-left: 18px; font-size: 0.95em;">
             <li><strong>Saygılı, Güvenilir, Sadakat (9):</strong> İlişkinin temeli.</li>
             <li><strong>Zeka, Duygusal zeka (8):</strong> Hem akıllı hem duygusal olmalı.</li>
             <li><strong>Cinsel uyum (7):</strong> Önemli ama tek kriter değil.</li>
@@ -432,11 +531,10 @@ export default function IdealErkekPage() {
             <li><strong>PC oyunları (6):</strong> Oyun oynasın ama seni de dinlesin.</li>
             <li><strong>Sosyal medya takibi (0-1):</strong> Bu özellik düşük kalsın.</li>
           </ul>
-          <p style="margin-top: 12px; font-size: 0.9em;">Ekleyebileceğin özellikler: <em>Liderlik, Kıskançlık, Netflix paylaşımı, Aile değerleri</em></p>
-          <p style="margin-top: 8px; font-size: 0.9em;">Bu profili uygulamak ister misin?</p>
-          <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
-            <button type="button" id="copy-text-static-btn" class="swal2-styled" style="background: #64748b; font-size: 13px; padding: 8px 14px;">Yazı olarak kopyala</button>
-            <button type="button" id="copy-image-static-btn" class="swal2-styled" style="background: #64748b; font-size: 13px; padding: 8px 14px;">Görsel olarak kopyala</button>
+          <p style="margin: 6px 0 4px; font-size: 0.9em;">Ekleyebileceğin özellikler: <em>Liderlik, Kıskançlık, Netflix paylaşımı, Aile değerleri</em></p>
+          <p style="margin: 0 0 4px; font-size: 0.9em;">Bu profili uygulamak ister misin?</p>
+          <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+            <button type="button" id="copy-text-static-btn" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:linear-gradient(135deg,#06b6d4,#0891b2);color:white;box-shadow:0 2px 10px rgba(6,182,212,0.3);">📋 Yazı olarak kopyala</button>
           </div>
         </div>
       `,
@@ -445,29 +543,14 @@ export default function IdealErkekPage() {
       confirmButtonText: 'Bunu uygula',
       cancelButtonText: 'Kendim ayarlayacağım',
       confirmButtonColor: '#06b6d4',
+      customClass: { popup: 'swal-fullscreen' },
       didOpen: () => {
         document.getElementById('copy-text-static-btn')?.addEventListener('click', async () => {
           try {
             await navigator.clipboard.writeText(STATIC_PROFILE_TEXT);
-            Swal.fire({ icon: 'success', title: 'Kopyalandı!', timer: 1500, showConfirmButton: false });
+            showToast('Kopyalandı!');
           } catch {
-            Swal.fire({ icon: 'error', title: 'Kopyalanamadı' });
-          }
-        });
-        document.getElementById('copy-image-static-btn')?.addEventListener('click', async () => {
-          try {
-            const popup = document.querySelector('.swal2-popup') as HTMLElement;
-            if (popup) {
-              const canvas = await html2canvas(popup, { backgroundColor: '#ffffff', scale: 2 });
-              canvas.toBlob(async (blob) => {
-                if (blob) {
-                  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                  Swal.fire({ icon: 'success', title: 'Görsel kopyalandı!', timer: 1500, showConfirmButton: false });
-                }
-              });
-            }
-          } catch {
-            Swal.fire({ icon: 'error', title: 'Görsel kopyalanamadı' });
+            showToast('Kopyalanamadı');
           }
         });
       },
@@ -548,14 +631,45 @@ export default function IdealErkekPage() {
     });
   };
 
+  if (isOzge === false) {
+    return (
+      <main className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+        <div className="text-center px-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-rose-400 mb-4">
+            Sen kimsin kardeşim?
+          </h1>
+          <p className="text-slate-300 text-lg">Sen git özge gelsin.</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (isOzge === null) {
+    return (
+      <main className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+        <div className="animate-pulse text-slate-400">Yükleniyor...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-900 text-slate-100 py-10">
       <section className="container max-w-5xl">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">İdeal Erkek</h1>
-        <p className="text-slate-300 mb-8">
-          Karakteristik özelliklerin bass seviyesini 0-10 arası ayarla ve son
-          grafiği indir.
-        </p>
+        <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">İdeal Erkek</h1>
+            <p className="text-slate-300">
+              Karakteristik özelliklerin bass seviyesini 0-10 arası ayarla ve son
+              grafiği indir.
+            </p>
+          </div>
+          <Link
+            href="/partner-analiz"
+            className="shrink-0 rounded-xl border border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer text-center whitespace-nowrap"
+          >
+            Şu anki partnerini analiz et →
+          </Link>
+        </div>
 
         <div className="flex flex-col md:flex-row md:items-center gap-3 mb-6">
           <input
