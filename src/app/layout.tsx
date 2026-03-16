@@ -12,13 +12,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Profuture | Teknoloji Dergisi",
-  description: "Türkiye'nin önde gelen hakemli akademik teknoloji dergisi. Dijital dönüşüm, yapay zeka, büyük veri ve siber güvenlik alanlarında özgün araştırmalar.",
-  keywords: ["teknoloji dergisi", "akademik dergi", "dijital dönüşüm", "yapay zeka", "büyük veri", "siber güvenlik", "Türkiye", "Profuture"],
-  authors: [{ name: "Profuture" }],
+  title: "İdeal Erkek | Partner Analizi",
+  description: "İdeal erkek profilini oluştur, özelliklerin bass seviyesini ayarla. Partnerini analiz et, AI ile ilişki tavsiyeleri al.",
+  keywords: ["ideal erkek", "partner analizi", "ilişki", "bass seviyesi", "AI analiz", "ilişki tavsiyesi", "erkek profili"],
+  authors: [{ name: "İdeal Erkek" }],
   openGraph: {
-    title: "Profuture Teknoloji Dergisi",
-    description: "Türkiye'nin önde gelen hakemli akademik teknoloji dergisi",
+    title: "İdeal Erkek | Partner Analizi",
+    description: "İdeal erkek profilini oluştur, partnerini AI ile analiz et.",
     type: "website",
     locale: "tr_TR",
   },
