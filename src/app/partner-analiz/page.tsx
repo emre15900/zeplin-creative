@@ -39,6 +39,7 @@ const initialFeatures: Feature[] = [
   { id: 23, name: 'Sabır', level: 6 },
   { id: 24, name: 'Sosyal medya kullanımı', level: 5 },
   { id: 25, name: 'Yakışıklılık', level: 6 },
+  { id: 26, name: 'Erillik', level: 6 },
 ];
 
 const copyBtnClass = 'copy-btn-modal';

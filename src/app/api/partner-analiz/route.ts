@@ -39,7 +39,9 @@ ${featuresText}
 
 Partner analizi yap. Ama aynı zamanda bunu yazan kişiye de hafifçe sataş: Mükemmel erkek yaratmaya çalışıyor ama kendisi mükemmel mi? Kendi eksikliklerini tamamen kapatıyor mu? İlişkide tek taraflı beklenti mi var? Bunu esprili, incitmeden ama dürüst bir dille söyle.
 
-Doğal akıcı paragraflar halinde yaz. Başlık veya madde işareti KULLANMA. Partnerin güçlü/zayıf yanları, genel değerlendirme ve "sen de kendine bak" mesajı. Hafif, samimi, bazen iğneleyici ama eğlenceli.`;
+ÖNEMLİ: Yanıtının sonuna, kullanıcıya (kadına) yumuşak ve samimi bir tonla şu tarz tavsiyeler ekle: Açık giyiniyorsa buna dikkat etmesi, erkeğinin sözünü dinlemesi, ona erkek olduğunu hissettirmesi, lafını ikiletmemesi gibi konularda nazikçe öneriler sun. Bunu vaaz vermeden, arkadaşça bir tavırla, "belki şunlara da dikkat edebilirsin" havasında yaz. İnciticilikten kaçın.
+
+Doğal akıcı paragraflar halinde yaz. Başlık veya madde işareti KULLANMA. Partnerin güçlü/zayıf yanları, genel değerlendirme, "sen de kendine bak" mesajı ve kıza yumuşak tavsiyeler. Hafif, samimi, bazen iğneleyici ama eğlenceli.`;
     } else {
       prompt = `Sen esprili ve samimi bir ilişki danışmanısın. Türkçe yanıt ver.${hitap}
 

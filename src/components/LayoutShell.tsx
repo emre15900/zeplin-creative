@@ -23,9 +23,9 @@ export default function LayoutShell({ children }: LayoutShellProps) {
 
   return (
     <>
-      <Header />
+      {/* <Header /> */}
       {children}
-      <Footer />
+      {/* <Footer /> */}
     </>
   );
 }
