@@ -576,7 +576,7 @@ export default function IdealErkekPage() {
     });
   };
 
-  const downloadChart = () => {
+  const downloadChart = async () => {
     const rowHeight = 42;
     const headerHeight = 72;
     const footerHeight = 40;
@@ -606,15 +606,66 @@ export default function IdealErkekPage() {
       </svg>
     `;
 
-    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'ideal-erkek-bass-grafiği.svg';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    const pngBlob = await new Promise<Blob | null>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        ctx.scale(2, 2);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((b) => resolve(b), 'image/png', 1);
+      };
+      img.onerror = () => resolve(null);
+      img.src = svgUrl;
+    });
+
+    URL.revokeObjectURL(svgUrl);
+
+    if (!pngBlob) {
+      showToast('Grafik indirilemedi');
+      return;
+    }
+
+    const filename = 'ideal-erkek-bass-grafigi.png';
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 768 || 'ontouchstart' in window);
+    const file = new File([pngBlob], filename, { type: 'image/png' });
+
+    if (isMobile && navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'İdeal Erkek Bass Grafiği',
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          fallbackDownload(pngBlob, filename);
+        }
+      }
+    } else {
+      fallbackDownload(pngBlob, filename);
+    }
+
+    function fallbackDownload(blob: Blob, name: string) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
 
     Swal.fire({
       title: pickRandom([
