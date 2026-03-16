@@ -58,6 +58,7 @@ const initialFeatures: Feature[] = [
   { id: 24, name: 'Sosyal medya kullanımı', level: 2 },
   { id: 25, name: 'Yakışıklılık', level: 1 },
   { id: 26, name: 'Erillik', level: 6 },
+  { id: 27, name: 'Centilmenlik', level: 8 },
 ];
 
 export default function IdealErkekPage() {
@@ -351,6 +352,7 @@ export default function IdealErkekPage() {
     { id: -24, name: 'Sosyal medya kullanımı', level: 1 },
     { id: -25, name: 'Yakışıklılık', level: 1 },
     { id: -26, name: 'Erillik', level: 6 },
+    { id: -27, name: 'Centilmenlik', level: 8 },
   ];
 
   const showIdealProfile = async () => {
